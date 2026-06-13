@@ -1,2 +1,4 @@
 pydantic>=2.0
 rapidfuzz>=3.0
+requests>=2.0
+kaggle>=1.6
