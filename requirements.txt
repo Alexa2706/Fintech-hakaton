@@ -1,4 +1,2 @@
-pydantic>=2.0
-rapidfuzz>=3.0
-requests>=2.0
-kaggle>=1.6
+rapidfuzz==3.14.5
+Unidecode==1.4.0
