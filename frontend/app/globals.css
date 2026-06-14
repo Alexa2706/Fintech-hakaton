@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* raw palette (DESIGN.md §2) */
+  --canvas: #0e141d;
+  --surface: #161e29;
+  --surface-2: #1b2430;
+  --hairline: #252e3b;
+  --line-strong: #313c4c;
+  --text: #c8d2de;
+  --text-muted: #7c8796;
+  --text-faint: #586374;
+  --accent: #5b8def;
+  --accent-hi: #74a0f5;
+  --accent-wash: rgba(91, 141, 239, 0.12);
+
+  --risk-high: #e5484d;
+  --risk-med: #e6a23c;
+  --risk-low: #3fb950;
+  /* faint zone/pill washes (hex tokens can't be alpha-modified by Tailwind) */
+  --risk-high-wash: rgba(229, 72, 77, 0.12);
+  --risk-med-wash: rgba(230, 162, 60, 0.12);
+  --risk-low-wash: rgba(63, 185, 80, 0.14);
+
+  /* exposure category dots */
+  --cat-sanctioned: #e5484d;
+  --cat-mixer: #d6803a;
+  --cat-darknet: #9a6bd6;
+  --cat-high-risk: #e6a23c;
+  --cat-exchange: #5b8def;
+  --cat-clean: #3fb950;
+
+  /* shadcn semantic mapping (dark is the only theme we ship) */
+  --background: var(--canvas);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: #0b0f16;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  --destructive: var(--risk-high);
+  --destructive-foreground: #fff;
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--accent);
+  --radius: 0px;
+}
+
+@layer base {
+  * {
+    border-color: var(--hairline);
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background: var(--canvas);
+    color: var(--text);
+    font-family: var(--font-sans), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* slim, quiet scrollbars — Gotham doesn't ship chunky chrome */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  .animate-sheet-in {
+    animation: sheetIn 180ms ease-out;
+  }
+  /* flowing dashes along a tainted edge — value moving toward the subject */
+  .taint-flow {
+    stroke-dasharray: 3 7;
+    animation: taintFlow 0.7s linear infinite;
+  }
+  /* expanding ring on the node the replay just lit — SVG-native (no box-shadow,
+     which glitches inside foreignObject) */
+  .replay-ring {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: replayRing 1.1s ease-out infinite;
+  }
+}
+
+@keyframes replayRing {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes sheetIn {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes taintFlow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
