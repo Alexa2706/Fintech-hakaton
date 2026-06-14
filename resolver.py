@@ -43,7 +43,7 @@ class Resolver:
     def __init__(
         self,
         entries: list[SanctionsEntry],
-        name_threshold: float = 0.82,
+        name_threshold: float = 0.88,
     ):
         self.entries = entries
         self.name_threshold = name_threshold
@@ -68,9 +68,20 @@ class Resolver:
         if not query:
             return 0.0
         q = normalize_name(query)
+        q_tokens = set(q.split())
         best = 0.0
         for c in candidates:
-            score = fuzz.WRatio(q, c) / 100.0
+            ratio = fuzz.ratio(q, c) / 100.0
+            token_sort = fuzz.token_sort_ratio(q, c) / 100.0
+            token_set = fuzz.token_set_ratio(q, c) / 100.0
+            score = max(ratio, token_sort, token_set)
+
+            c_tokens = set(c.split())
+            if q_tokens and c_tokens:
+                overlap = len(q_tokens & c_tokens) / max(len(q_tokens), len(c_tokens))
+                if overlap < 0.5 and score > 0.8:
+                    score = min(score, 0.75)
+
             candidate_token_chars = sum(len(tok) for tok in c.split())
             if candidate_token_chars < 5 and q != c:
                 score = min(score, 0.7)
