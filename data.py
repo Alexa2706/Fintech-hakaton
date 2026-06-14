@@ -1,6 +1,47 @@
-from resolver import SanctionsEntry
+import re
+from pathlib import Path
 
-SANCTIONS_LIST = [
+from resolver import SanctionsEntry
+from screen_sdn import clean_value, load_sdn
+
+
+SDN_CSV_PATH = Path(__file__).with_name("sdn.csv")
+
+
+def _extract_digital_currency_addresses(remarks: str) -> list[str]:
+    addresses: list[str] = []
+    pattern = re.compile(
+        r"(?:alt\.\s*)?Digital Currency Address\s*-\s*[A-Z0-9]+\s+([^;.\s]+)",
+        re.IGNORECASE,
+    )
+    for match in pattern.finditer(remarks or ""):
+        addresses.append(match.group(1))
+    return addresses
+
+
+def _sanctions_entry_from_sdn(record) -> SanctionsEntry:
+    aliases = [
+        alias["name"]
+        for alias in record.aliases
+        if clean_value(alias.get("name"))
+    ]
+    sdn_type = clean_value(record.sdn_type)
+
+    return SanctionsEntry(
+        name=record.name,
+        aliases=aliases,
+        entity_type="individual" if sdn_type == "individual" else "business",
+        wallets=_extract_digital_currency_addresses(record.remarks),
+    )
+
+
+def _load_sdn_sanctions_entries(path: Path = SDN_CSV_PATH) -> list[SanctionsEntry]:
+    if not path.exists():
+        return []
+    return [_sanctions_entry_from_sdn(record) for record in load_sdn(path)]
+
+
+DEMO_SANCTIONS_LIST = [
     SanctionsEntry(
         name="Oligarch Xander Petrov",
         aliases=["Xander P. Petrov", "Aleksandr Petrov"],
@@ -35,6 +76,8 @@ SANCTIONS_LIST = [
         ],
     ),
 ]
+
+SANCTIONS_LIST = DEMO_SANCTIONS_LIST + _load_sdn_sanctions_entries()
 
 DEMO_SANCTIONED_PERSON = "p_0"
 DEMO_SHELL_COMPANY = "c_3278"

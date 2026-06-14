@@ -1,0 +1,20 @@
+Project structure
+
+- screen_sdn.py: main screening module and CLI entry point.
+- sdn.csv: local OFAC sanctions data used by the matcher.
+- requirements.txt: Python dependencies for faster and better matching.
+
+Integration notes
+
+- Load data once with load_sdn("sdn.csv") and reuse the returned records.
+- Screen one name with screen_name(name, records).
+- Screen a payment with screen_transaction(sender_name, receiver_name, records).
+- Results include transaction_verdict, per-party verdict, confidence_score,
+  matched_sanctions_record, matched_name_or_alias, explanation, and review_info.
+- Possible name verdicts are MATCH, REVIEW, and NOT_MATCH.
+- Possible transaction verdicts are DISALLOW, REVIEW, and ALLOW.
+
+Performance
+
+- The module builds an in-memory candidate index on first use.
+- Reusing loaded records is important; loading the CSV on every request is slower.

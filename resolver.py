@@ -71,6 +71,9 @@ class Resolver:
         best = 0.0
         for c in candidates:
             score = fuzz.WRatio(q, c) / 100.0
+            candidate_token_chars = sum(len(tok) for tok in c.split())
+            if candidate_token_chars < 5 and q != c:
+                score = min(score, 0.7)
             if score > best:
                 best = score
         return best
@@ -135,5 +138,4 @@ class Resolver:
             fields_matched=best_fields,
             sanctioned_wallet=wallet_hit,
         )
-
 
