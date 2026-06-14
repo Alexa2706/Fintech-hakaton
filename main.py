@@ -1,6 +1,6 @@
 from adapters import ZeroHashAdapter, FiatBankAdapter
 from resolver import Resolver
-from graph import CryptoGraph, OwnershipGraph, load_ofac_wallets
+from graph import CryptoGraph, OwnershipGraph
 from traverse import exposure, ExposureResult
 from fuse import fuse
 from data import (
@@ -45,68 +45,100 @@ def screen(request, resolver, crypto_graph, ownership_graph, ownership_node=None
 def main():
     print("Loading datasets...\n")
 
-    crypto_graph = CryptoGraph.from_elliptic("data/elliptic")
-    ofac_wallets = load_ofac_wallets("data/ofac/sanctioned_addresses_ETH.txt")
+    crypto_graph = CryptoGraph.from_synthetic("data/synthetic")
 
     sanctioned_people = {DEMO_SANCTIONED_PERSON}
     ownership_graph = OwnershipGraph.from_ubo("data/ubo", sanctioned_entity_ids=sanctioned_people)
 
     resolver = Resolver(SANCTIONS_LIST)
-    resolver._wallet_set |= ofac_wallets
 
     zh_adapter = ZeroHashAdapter()
     fiat_adapter = FiatBankAdapter()
 
-    # ── Test 1: Crypto — direct OFAC wallet hit ──
-    print("\n" + "=" * 60)
-    print("Test 1: Crypto — direct OFAC wallet hit (Tornado Cash)")
-    print("=" * 60)
+    # ── Crypto tests ──
 
-    req = zh_adapter.parse(CRYPTO_PAYLOADS["sanctioned_wallet"])
+    print("\n" + "=" * 60)
+    print("Test 1: Crypto — direct sanctioned wallet")
+    print("=" * 60)
+    req = zh_adapter.parse(CRYPTO_PAYLOADS["direct_hit"])
     verdict = screen(req, resolver, crypto_graph, ownership_graph)
     _print_verdict(verdict)
 
-    # ── Test 2: Crypto — tainted tx (graph traversal) ──
     print("\n" + "=" * 60)
-    print("Test 2: Crypto — tainted tx (1 hop from illicit, 50% taint)")
+    print("Test 2: Crypto — 1 hop, ~80% taint")
     print("=" * 60)
-
-    req = zh_adapter.parse(CRYPTO_PAYLOADS["tainted_tx"])
+    req = zh_adapter.parse(CRYPTO_PAYLOADS["high_taint"])
     verdict = screen(req, resolver, crypto_graph, ownership_graph)
     _print_verdict(verdict)
 
-    # ── Test 3: Fiat — name match + secondary IDs ──
     print("\n" + "=" * 60)
-    print("Test 3: Fiat — fuzzy name match (Darkflow Finance)")
+    print("Test 3: Crypto — 1 hop, ~10% taint")
     print("=" * 60)
+    req = zh_adapter.parse(CRYPTO_PAYLOADS["low_taint"])
+    verdict = screen(req, resolver, crypto_graph, ownership_graph)
+    _print_verdict(verdict)
 
+    print("\n" + "=" * 60)
+    print("Test 4: Crypto — 2 hops, ~25% taint")
+    print("=" * 60)
+    req = zh_adapter.parse(CRYPTO_PAYLOADS["medium_2hop"])
+    verdict = screen(req, resolver, crypto_graph, ownership_graph)
+    _print_verdict(verdict)
+
+    print("\n" + "=" * 60)
+    print("Test 5: Crypto — mixer blocks traversal")
+    print("=" * 60)
+    req = zh_adapter.parse(CRYPTO_PAYLOADS["mixer_path"])
+    verdict = screen(req, resolver, crypto_graph, ownership_graph)
+    _print_verdict(verdict)
+
+    print("\n" + "=" * 60)
+    print("Test 6: Crypto — 3 hops, deep taint ~13%")
+    print("=" * 60)
+    req = zh_adapter.parse(CRYPTO_PAYLOADS["deep_3hop"])
+    verdict = screen(req, resolver, crypto_graph, ownership_graph)
+    _print_verdict(verdict)
+
+    print("\n" + "=" * 60)
+    print("Test 7: Crypto — forward exposure ~60%")
+    print("=" * 60)
+    req = zh_adapter.parse(CRYPTO_PAYLOADS["forward_exposure"])
+    verdict = screen(req, resolver, crypto_graph, ownership_graph)
+    _print_verdict(verdict)
+
+    print("\n" + "=" * 60)
+    print("Test 8: Crypto — clean wallet")
+    print("=" * 60)
+    req = zh_adapter.parse(CRYPTO_PAYLOADS["clean"])
+    verdict = screen(req, resolver, crypto_graph, ownership_graph)
+    _print_verdict(verdict)
+
+    # ── Fiat tests ──
+
+    print("\n" + "=" * 60)
+    print("Test 9: Fiat — fuzzy name match (Darkflow Finance)")
+    print("=" * 60)
     req = fiat_adapter.parse(FIAT_PAYLOADS["darkflow_match"])
     verdict = screen(req, resolver, crypto_graph, ownership_graph)
     _print_verdict(verdict)
 
-    # ── Test 4: Fiat — shell company, 100% sanctioned UBO ──
     print("\n" + "=" * 60)
-    print("Test 4: Fiat — clean name, 100% sanctioned UBO (shell company)")
+    print("Test 10: Fiat — clean name, 100% sanctioned UBO")
     print("=" * 60)
-
     req = fiat_adapter.parse(FIAT_PAYLOADS["shell_company_full"])
     verdict = screen(req, resolver, crypto_graph, ownership_graph, ownership_node=DEMO_SHELL_COMPANY)
     _print_verdict(verdict)
 
-    # ── Test 5: Fiat — partial ownership + partial name match ──
     print("\n" + "=" * 60)
-    print("Test 5: Fiat — partial name match + 33% sanctioned UBO")
+    print("Test 11: Fiat — partial name match + 33% sanctioned UBO")
     print("=" * 60)
-
     req = fiat_adapter.parse(FIAT_PAYLOADS["shell_company_partial"])
     verdict = screen(req, resolver, crypto_graph, ownership_graph, ownership_node=DEMO_SHARED_COMPANY)
     _print_verdict(verdict)
 
-    # ── Test 6: Fiat — clean ──
     print("\n" + "=" * 60)
-    print("Test 6: Fiat — clean transaction (no match)")
+    print("Test 12: Fiat — clean transaction")
     print("=" * 60)
-
     req = fiat_adapter.parse(FIAT_PAYLOADS["clean"])
     verdict = screen(req, resolver, crypto_graph, ownership_graph)
     _print_verdict(verdict)

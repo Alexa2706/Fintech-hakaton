@@ -25,7 +25,6 @@ class EntityIds(BaseModel):
     dob: Optional[str] = None
     nationality: Optional[str] = None
     country: Optional[str] = None
-    passport_no: Optional[str] = None
     reg_no: Optional[str] = None
 
 
@@ -35,7 +34,6 @@ class Participant(BaseModel):
     ids: EntityIds = Field(default_factory=EntityIds)
     participant_ref: Optional[str] = None
     wallet: Optional[str] = None
-    account_no: Optional[str] = None
 
 
 class ScreenRequest(BaseModel):

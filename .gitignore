@@ -1,4 +1,6 @@
 __pycache__/
 *.pyc
-data/
+data/elliptic
+data/ofac
+data/ubo
 .env

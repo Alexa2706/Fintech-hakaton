@@ -36,35 +36,74 @@ SANCTIONS_LIST = [
     ),
 ]
 
-DEMO_TAINTED_TX = "294575834"
-
-# UBO graph IDs for demo scenarios
-# p_0 = sanctioned person ("Oligarch Xander Petrov")
-# c_3278 = 100% owned by p_0 (shell company)
-# c_83810 = 33% owned by p_0 (shared ownership)
-# c_32098 = 50% owned by p_0
 DEMO_SANCTIONED_PERSON = "p_0"
 DEMO_SHELL_COMPANY = "c_3278"
 DEMO_SHARED_COMPANY = "c_83810"
 
 CRYPTO_PAYLOADS = {
-    "sanctioned_wallet": {
-        "transaction_id": "zh_998877",
+    "direct_hit": {
+        "transaction_id": "zh_direct_001",
         "asset": "USDC",
         "network": "Ethereum",
         "amount": 25000.00,
         "participant": {"participant_code": "CUST-9921"},
-        "destination": {
-            "withdrawal_address": "0x722122df12d4e14e13ac3b6895a86e84145b6967"
-        },
+        "destination": {"withdrawal_address": "0xSANC_TORNADO"},
     },
-    "tainted_tx": {
-        "transaction_id": "zh_taint_001",
-        "asset": "BTC",
-        "network": "Bitcoin",
-        "amount": 15000.00,
+    "high_taint": {
+        "transaction_id": "zh_high_001",
+        "asset": "USDC",
+        "network": "Ethereum",
+        "amount": 18000.00,
         "participant": {"participant_code": "CUST-CLEAN"},
-        "destination": {"withdrawal_address": DEMO_TAINTED_TX},
+        "destination": {"withdrawal_address": "0xHIGH_TAINT"},
+    },
+    "low_taint": {
+        "transaction_id": "zh_low_001",
+        "asset": "ETH",
+        "network": "Ethereum",
+        "amount": 5000.00,
+        "participant": {"participant_code": "CUST-CLEAN"},
+        "destination": {"withdrawal_address": "0xLOW_TAINT"},
+    },
+    "medium_2hop": {
+        "transaction_id": "zh_med_001",
+        "asset": "USDC",
+        "network": "Ethereum",
+        "amount": 30000.00,
+        "participant": {"participant_code": "CUST-CLEAN"},
+        "destination": {"withdrawal_address": "0xMED_TAINT"},
+    },
+    "mixer_path": {
+        "transaction_id": "zh_mixer_001",
+        "asset": "ETH",
+        "network": "Ethereum",
+        "amount": 12000.00,
+        "participant": {"participant_code": "CUST-CLEAN"},
+        "destination": {"withdrawal_address": "0xMIXER_PATH"},
+    },
+    "deep_3hop": {
+        "transaction_id": "zh_deep_001",
+        "asset": "USDC",
+        "network": "Ethereum",
+        "amount": 8000.00,
+        "participant": {"participant_code": "CUST-CLEAN"},
+        "destination": {"withdrawal_address": "0xDEEP_TAINT"},
+    },
+    "forward_exposure": {
+        "transaction_id": "zh_fwd_001",
+        "asset": "USDC",
+        "network": "Ethereum",
+        "amount": 20000.00,
+        "participant": {"participant_code": "CUST-CLEAN"},
+        "destination": {"withdrawal_address": "0xFWD_EXPOSED"},
+    },
+    "clean": {
+        "transaction_id": "zh_clean_001",
+        "asset": "USDC",
+        "network": "Ethereum",
+        "amount": 10000.00,
+        "participant": {"participant_code": "CUST-CLEAN"},
+        "destination": {"withdrawal_address": "0xCLEAN_WALLET"},
     },
 }
 
@@ -93,7 +132,7 @@ FIAT_PAYLOADS = {
         "tx_ref": "tx_fiat_shell_002",
         "fiat_currency": "EUR",
         "total_value": 75000.00,
-        "remitter": {"full_name": "Al Rashid Trading Co."},
+        "remitter": {"full_name": "Al-Rasheed Trading Co"},
         "payee": {
             "company_name": "Baltic Logistics SARL",
         },

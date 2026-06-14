@@ -76,6 +76,36 @@ class CryptoGraph(GraphSource):
 
         return g
 
+    @classmethod
+    def from_synthetic(cls, data_dir: str) -> CryptoGraph:
+        g = cls()
+        data = Path(data_dir)
+
+        nodes_file = _find_file(data, "crypto_nodes.csv")
+        with open(nodes_file) as f:
+            for row in csv.DictReader(f):
+                nid = row["id"].strip()
+                label = row.get("label", "").strip()
+                labels = [label] if label else []
+                if label == "sanctioned":
+                    g._illicit.add(nid)
+                g._nodes[nid] = Node(id=nid, type=row.get("type", "address").strip(), labels=labels)
+
+        edges_file = _find_file(data, "crypto_edges.csv")
+        with open(edges_file) as f:
+            for row in csv.DictReader(f):
+                src, dst = row["src"].strip(), row["dst"].strip()
+                value = float(row["value"]) if row.get("value") else None
+                edge = Edge(src=src, dst=dst, value=value, kind="transaction")
+                g._out_edges[src].append(edge)
+                g._in_edges[dst].append(edge)
+
+        print(f"CryptoGraph(synthetic): {len(g._nodes)} nodes, "
+              f"{sum(len(v) for v in g._out_edges.values())} edges, "
+              f"{len(g._illicit)} sanctioned")
+
+        return g
+
     def neighbors(self, node_id: str, direction: str, limit: int = 50) -> list[Edge]:
         if direction == "in":
             return self._in_edges.get(node_id, [])[:limit]
