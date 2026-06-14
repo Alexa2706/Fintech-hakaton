@@ -84,6 +84,8 @@ def _corner_score_exposure(exp: ExposureResult, graph_name: str) -> tuple[float,
         evidence["taint_pct"] = exp.taint
     if exp.mixer_detected:
         evidence["mixer_detected"] = True
+    if exp.sources:
+        evidence["sources"] = exp.sources
 
     return round(score, 4), evidence
 
