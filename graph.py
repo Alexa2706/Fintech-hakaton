@@ -174,6 +174,49 @@ class OwnershipGraph(GraphSource):
 
         return g
 
+    @classmethod
+    def from_synthetic(cls, data_dir: str) -> OwnershipGraph:
+        """Offline UBO graph from small synthetic CSVs (no Kaggle download).
+        Mirrors from_synthetic on CryptoGraph: people own companies, a
+        `sanctioned` column on people marks the illicit UBOs. Names are carried
+        in labels[0] so the screening service can render readable nodes."""
+        g = cls()
+        data = Path(data_dir)
+
+        companies_file = _find_file(data, "ubo_companies.csv")
+        with open(companies_file) as f:
+            for row in csv.DictReader(f):
+                cid = f"c_{row['company_id'].strip()}"
+                name = (row.get("name") or "").strip()
+                g._nodes[cid] = Node(id=cid, type="company", labels=[name] if name else [])
+
+        people_file = _find_file(data, "ubo_people.csv")
+        with open(people_file) as f:
+            for row in csv.DictReader(f):
+                pid = f"p_{row['person_id'].strip()}"
+                name = (row.get("name") or "").strip()
+                g._nodes[pid] = Node(id=pid, type="individual", labels=[name] if name else [])
+                if (row.get("sanctioned") or "").strip().lower() in ("1", "true", "yes"):
+                    g._sanctioned.add(pid)
+
+        inv_file = _find_file(data, "ubo_investments.csv")
+        with open(inv_file) as f:
+            for row in csv.DictReader(f):
+                pid = f"p_{row['person_id'].strip()}"
+                cid = f"c_{row['company_id'].strip()}"
+                shares_raw = (row.get("shares") or "").strip()
+                pct = float(shares_raw) if shares_raw else None
+                role = (row.get("role") or "owner").strip()
+                edge = Edge(src=pid, dst=cid, value=pct, kind=role)
+                g._out_edges[pid].append(edge)
+                g._in_edges[cid].append(edge)
+
+        print(f"OwnershipGraph(synthetic): {len(g._nodes)} entities, "
+              f"{sum(len(v) for v in g._out_edges.values())} links, "
+              f"{len(g._sanctioned)} sanctioned")
+
+        return g
+
     def neighbors(self, node_id: str, direction: str, limit: int = 50) -> list[Edge]:
         if direction == "in":
             return self._in_edges.get(node_id, [])[:limit]

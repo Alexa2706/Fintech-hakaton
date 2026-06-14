@@ -1,0 +1,7 @@
+person_id,company_id,shares,role
+0,3278,1.0,owner
+0,83810,0.55,owner
+1,83810,0.45,owner
+2,5012,1.0,owner
+3,9001,0.7,owner
+1,9001,0.3,owner
