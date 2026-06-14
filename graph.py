@@ -35,12 +35,6 @@ class GraphSource(ABC):
 
 
 class CryptoGraph(GraphSource):
-    """Loads the Elliptic Bitcoin dataset.
-
-    Download: https://www.kaggle.com/datasets/ellipticco/elliptic-data-set
-    Run setup_data.sh to download automatically.
-    """
-
     def __init__(self):
         self._nodes: dict[str, Node] = {}
         self._out_edges: dict[str, list[Edge]] = defaultdict(list)
@@ -95,16 +89,6 @@ class CryptoGraph(GraphSource):
 
 
 class OwnershipGraph(GraphSource):
-    """Loads UBO dataset (companies.csv, people.csv, investments.csv).
-
-    Download: https://www.kaggle.com/datasets/sasanj/ultimate-beneficial-owners-companies-investments
-    Run setup_data.sh to download automatically.
-
-    Graph structure:
-      - Nodes: companies + people
-      - Edges: person --owns(pct)--> company  (from investments.csv)
-      - Traversal: from a company, follow "in" edges to find owners/UBOs
-    """
 
     def __init__(self, sanctioned_entity_ids: set[str] | None = None):
         self._nodes: dict[str, Node] = {}
@@ -173,11 +157,6 @@ class OwnershipGraph(GraphSource):
 
 
 def load_ofac_wallets(path: str) -> set[str]:
-    """Load sanctioned wallet addresses from a 0xB10C TXT file.
-
-    Download: https://github.com/0xB10C/ofac-sanctioned-digital-currency-addresses
-    Run setup_data.sh to download automatically.
-    """
     wallets = set()
     with open(path) as f:
         for line in f:
@@ -189,7 +168,6 @@ def load_ofac_wallets(path: str) -> set[str]:
 
 
 def _find_file(base: Path, filename: str) -> Path:
-    """Find a file in base dir or any subfolder (handles Kaggle nested unzips)."""
     direct = base / filename
     if direct.exists():
         return direct

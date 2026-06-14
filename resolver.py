@@ -105,7 +105,6 @@ class Resolver:
 
     def resolve(self, participant: Participant) -> ResolveResult:
         wallet_hit = self._check_wallet(participant.wallet)
-
         if not participant.name:
             return ResolveResult(sanctioned_wallet=wallet_hit)
 

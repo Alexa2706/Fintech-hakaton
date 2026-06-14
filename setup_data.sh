@@ -14,18 +14,12 @@ mkdir -p "$ELLIPTIC_DIR" "$OFAC_DIR" "$UBO_DIR"
 
 # Detect Kaggle CLI 
 
-if ! command -v kaggle &> /dev/null; then
-    echo ""
-    echo "[..] Kaggle CLI not found. Installing..."
-    pip install -q kaggle
-fi
-
 HAS_KAGGLE=false
 if kaggle datasets list --max-size 1 &> /dev/null; then
     HAS_KAGGLE=true
 else
     echo ""
-    echo "[!] Kaggle CLI not authenticated. Run: kaggle auth login "
+    echo "[!] Kaggle not authenticated. Run: kaggle auth login"
     echo ""
 fi
 
