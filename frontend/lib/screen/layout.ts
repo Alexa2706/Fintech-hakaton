@@ -26,6 +26,7 @@ export interface LayoutEdgeInput {
   to: string;
   label: string;
   tainted: boolean;
+  kind?: GEdge["kind"];
 }
 
 export function layoutGraph(
@@ -53,6 +54,7 @@ export function layoutGraph(
     to: e.to,
     label: e.label,
     tainted: e.tainted,
+    kind: e.kind,
   }));
   return { nodes: gnodes, edges: gedges };
 }
