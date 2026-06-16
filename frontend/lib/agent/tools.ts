@@ -1,5 +1,7 @@
 import type OpenAI from "openai";
 import { engine } from "@/lib/engine";
+import { splitGraphByRail } from "@/lib/engine/graph";
+import { researchPolicy } from "@/lib/agent/policyResearch";
 import type { Engine } from "@/lib/engine/types";
 
 // OpenAI/DeepSeek tool schemas — all READ-ONLY over the engine contract.
@@ -74,6 +76,32 @@ export const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
+      name: "get_policy",
+      description:
+        "The decision policy this case was scored under: the review and block taint thresholds, the rationale, and the sanctions-list version + policy version the verdict is pinned to. Use it to state thresholds and versions instead of assuming them — they can differ between cases.",
+      parameters: {
+        type: "object",
+        properties: { caseId: { type: "string" } },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_graphs",
+      description:
+        "The case split into its two graphs: `crypto` (transaction graph — wallets/exchanges/mixers, edges = coin amounts) and `fiat` (beneficial-ownership graph — companies/people/banks, edges = ownership %). Each carries its own nodes + edges; a case may populate one or both (an on/off-ramp crosses both).",
+      parameters: {
+        type: "object",
+        properties: { caseId: { type: "string" } },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "draft_sar",
       description:
         "A DRAFT Suspicious Activity Report narrative assembled only from this case's evidence.",
@@ -81,6 +109,24 @@ export const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         type: "object",
         properties: { caseId: { type: "string" } },
         required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "research_policy",
+      description:
+        "Research a sanctions / AML / stablecoin regulation by name (e.g. 'GENIUS Act', 'Travel Rule', 'OFAC 50% rule', 'MiCA', 'SAR') and get a plain-language brief: what it requires and how this engine already covers or versions its policy to meet it. The same tool answers 'where does the data come from' / data-strategy questions. Knowledge tool — not tied to the active case.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "a regulation name or a data-source question",
+          },
+        },
+        required: ["query"],
       },
     },
   },
@@ -107,8 +153,26 @@ export function runTool(
         return JSON.stringify(eng.getExposure(nodeId));
       case "explain_score":
         return JSON.stringify(eng.explainScore(boundCaseId));
+      case "get_policy": {
+        const { policy } = eng.explainScore(boundCaseId);
+        const v = eng.getVerdict(boundCaseId);
+        return JSON.stringify({
+          version: policy.version,
+          reviewAt: policy.reviewAt,
+          blockAt: policy.blockAt,
+          rationale: policy.rationale,
+          listVersion: v.listVersion,
+          policyVersion: v.policyVersion,
+        });
+      }
+      case "get_graphs":
+        return JSON.stringify(splitGraphByRail(eng.getPath(boundCaseId)));
       case "draft_sar":
         return JSON.stringify({ sar: eng.draftSar(boundCaseId) });
+      case "research_policy": {
+        const q = typeof args.query === "string" ? args.query : "";
+        return JSON.stringify(researchPolicy(q));
+      }
       default:
         return JSON.stringify({ error: `unknown tool: ${name}` });
     }

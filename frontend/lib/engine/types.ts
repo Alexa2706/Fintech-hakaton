@@ -73,6 +73,12 @@ export interface GEdge {
   to: string;
   label: string; // BTC/USDC amount (crypto) or ownership % (fiat)
   tainted: boolean;
+  // CONTRACT EXTENSION: which of the two graphs this edge belongs to —
+  // "transaction" = crypto value flow, "ownership" = fiat UBO %. Optional:
+  // seed fixtures omit it (rail is inferred from label/node type in
+  // lib/engine/graph.ts); the live engine emits it exactly. Lets the agent
+  // reason over the crypto graph and the fiat graph separately.
+  kind?: "transaction" | "ownership";
 }
 
 export interface EntityProfile {

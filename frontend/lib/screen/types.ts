@@ -50,12 +50,23 @@ export interface LiveVerdict {
   explanation: string;
   timestamp: string;
 }
+export interface LiveExposureSlice {
+  category: string;
+  pct: number;
+  risk?: "high" | "medium" | "low"; // derived from category when the engine omits it
+}
 export interface LiveNode {
   id: string;
   label: string;
   type: string;
   sanctioned: boolean;
   category: string;
+  // per-node detail straight from the engine. When present the bridge serves
+  // these verbatim into the inspector (stats grid + exposure bars); when absent
+  // it synthesises a minimal stand-in so the demo still renders. The real
+  // engine should populate both — that is what makes the sidebar non-mock.
+  stats?: Record<string, string>;
+  exposure?: { receiving: LiveExposureSlice[]; sending: LiveExposureSlice[] };
 }
 export interface LiveEdge {
   src: string;

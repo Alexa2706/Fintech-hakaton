@@ -10,6 +10,7 @@ import type {
   EntityProfile,
   Exposure,
   ExposureCategory,
+  ExposureSlice,
   GNode,
   GNodeType,
   Outcome,
@@ -19,6 +20,8 @@ import type {
 } from "@/lib/engine/types";
 import type {
   LiveCorner,
+  LiveExposureSlice,
+  LiveNode,
   LiveScreenResponse,
   ScreenedCase,
   ScreenPayload,
@@ -186,6 +189,10 @@ export function mapLiveResponse(
     to: e.dst,
     label: edgeLabel(e, resp.request.asset, resp.request.currency),
     tainted: e.tainted,
+    kind:
+      e.kind === "owner" || e.kind === "ownership"
+        ? "ownership"
+        : "transaction",
   }));
   const graph = layoutGraph(layoutNodes, layoutEdges);
 
@@ -199,13 +206,13 @@ export function mapLiveResponse(
       category: n.category,
       rootRef: n.id,
       sanctioned: n.sanctioned,
-      stats: nodeStats(n.category, n.type, n.id === subjectId, taint),
+      stats: nodeStats(n, n.id === subjectId, taint),
     };
   });
 
   const exposures = resp.subgraph.nodes.map((n) => ({
     node: n.id,
-    exposure: nodeExposure(n.sanctioned, n.id === subjectId, n.category, taint),
+    exposure: nodeExposure(n, n.id === subjectId, taint),
   }));
 
   // ── policy, summary, sar ──────────────────────────────────────────────────
@@ -278,27 +285,50 @@ function scenarioCorridor(s: string): string {
   return "Fiat → Fiat";
 }
 
+// Engine-provided stats win (the non-mock path); otherwise synth a minimal grid
+// so the cell isn't empty. When the real engine populates LiveNode.stats this is
+// served verbatim into the inspector's stats grid.
 function nodeStats(
-  category: string,
-  type: string,
+  n: LiveNode,
   isSubject: boolean,
   taint: number,
 ): Record<string, string> {
-  const stats: Record<string, string> = {
-    category,
-    type,
-  };
+  if (n.stats && Object.keys(n.stats).length > 0) return n.stats;
+  const stats: Record<string, string> = { category: n.category, type: n.type };
   if (isSubject) stats.taint = `${(taint * 100).toFixed(1)}%`;
   return stats;
 }
 
-function nodeExposure(
-  sanctioned: boolean,
-  isSubject: boolean,
-  category: string,
-  taint: number,
-): Exposure {
-  if (sanctioned)
+function riskOf(category: ExposureCategory): "high" | "medium" | "low" {
+  return category === "sanctioned" ||
+    category === "mixer" ||
+    category === "darknet" ||
+    category === "high-risk"
+    ? "high"
+    : "low";
+}
+
+function mapSlices(slices: LiveExposureSlice[]): ExposureSlice[] {
+  return slices.map((s) => {
+    const category = asExposureCategory(s.category);
+    return { category, pct: s.pct, risk: s.risk ?? riskOf(category) };
+  });
+}
+
+// Engine-provided per-node breakdown wins (the non-mock path); otherwise synth
+// from the verdict so the bars still render. Real engine -> real exposure bars.
+function nodeExposure(n: LiveNode, isSubject: boolean, taint: number): Exposure {
+  const clean: ExposureSlice[] = [{ category: "clean", pct: 100, risk: "low" }];
+  if (n.exposure?.receiving?.length || n.exposure?.sending?.length) {
+    return {
+      receiving: n.exposure.receiving?.length
+        ? mapSlices(n.exposure.receiving)
+        : clean,
+      sending: n.exposure.sending?.length ? mapSlices(n.exposure.sending) : clean,
+    };
+  }
+  // ── synth fallback (engine returned no per-node breakdown) ──
+  if (n.sanctioned)
     return {
       receiving: [{ category: "sanctioned", pct: 100, risk: "high" }],
       sending: [{ category: "sanctioned", pct: 100, risk: "high" }],
@@ -306,20 +336,17 @@ function nodeExposure(
   if (isSubject && taint > 0.01) {
     const tainted = Math.round(taint * 100);
     const cat = asExposureCategory(
-      category === "clean" ? "sanctioned" : category,
+      n.category === "clean" ? "sanctioned" : n.category,
     );
     return {
       receiving: [
         { category: cat, pct: tainted, risk: "high" },
         { category: "clean", pct: 100 - tainted, risk: "low" },
       ],
-      sending: [{ category: "clean", pct: 100, risk: "low" }],
+      sending: clean,
     };
   }
-  return {
-    receiving: [{ category: "clean", pct: 100, risk: "low" }],
-    sending: [{ category: "clean", pct: 100, risk: "low" }],
-  };
+  return { receiving: clean, sending: clean };
 }
 
 function draftSar(
