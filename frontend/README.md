@@ -9,11 +9,18 @@ Next.js (App Router, TypeScript) · React · Tailwind · shadcn/ui · Recharts.
 
 ## Run it (mock data, no backend)
 
+Prerequisites: **Node 18+** (20+ recommended) and npm. Fresh clone:
+
 ```bash
+git clone https://github.com/Alexa2706/Fintech-hakaton.git
+cd Fintech-hakaton/frontend   # the app lives in this subfolder of the monorepo
 npm install
 npm run dev
 # open http://localhost:3000
 ```
+
+No `.env` is required to run the console — it serves mock data out of the box.
+(A `DEEPSEEK_API_KEY` is only needed for the live conversational agent; see below.)
 
 The console runs **entirely on mock data** — no Python service, no database, no
 network. Everything you see (queue, graph canvas, inspector, exposure bars,
