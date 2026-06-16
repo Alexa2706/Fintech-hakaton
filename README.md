@@ -1,7 +1,10 @@
 # Sanctions Screening Engine
-
 One engine, two graphs. Unified sanctions screening across crypto transactions and corporate ownership.
 
+
+##Front
+Za front cd /frontend pa npm install i ona npm run dev
+Potrebno dodati deep seek api key u .env.local
 ## Quick Start
 
 ```bash
